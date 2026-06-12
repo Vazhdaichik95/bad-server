@@ -3,6 +3,7 @@ import { FilterQuery } from 'mongoose'
 import NotFoundError from '../errors/not-found-error'
 import Order from '../models/order'
 import User, { IUser } from '../models/user'
+import sanitizeText from '../utils/sanitizeText'
 
 // TODO: Добавить guard admin
 // eslint-disable-next-line max-len
@@ -179,11 +180,18 @@ export const updateCustomer = async (
     next: NextFunction
 ) => {
     try {
+        const allowedUpdates = {
+            name: sanitizeText(req.body.name),
+            phone: sanitizeText(req.body.phone),
+            email: sanitizeText(req.body.email),
+        }
+
         const updatedUser = await User.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            allowedUpdates,
             {
                 new: true,
+                runValidators: true,
             }
         )
             .orFail(
@@ -193,6 +201,7 @@ export const updateCustomer = async (
                     )
             )
             .populate(['orders', 'lastOrder'])
+
         res.status(200).json(updatedUser)
     } catch (error) {
         next(error)

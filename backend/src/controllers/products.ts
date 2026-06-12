@@ -7,6 +7,7 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import sanitizeText from '../utils/sanitizeText'
 
 // GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
@@ -40,9 +41,8 @@ const createProduct = async (
     next: NextFunction
 ) => {
     try {
-        const { description, category, price, title, image } = req.body
+        const { image } = req.body
 
-        // Переносим картинку из временной папки
         if (image) {
             movingFile(
                 image.fileName,
@@ -52,12 +52,18 @@ const createProduct = async (
         }
 
         const product = await Product.create({
-            description,
-            image,
-            category,
-            price,
-            title,
+            title: sanitizeText(req.body.title),
+            description: sanitizeText(req.body.description),
+            category: sanitizeText(req.body.category),
+            price: req.body.price ?? null,
+            image: image
+                ? {
+                      fileName: image.fileName,
+                      originalName: sanitizeText(image.originalName),
+                  }
+                : undefined,
         })
+
         return res.status(constants.HTTP_STATUS_CREATED).send(product)
     } catch (error) {
         if (error instanceof MongooseError.ValidationError) {
@@ -83,7 +89,6 @@ const updateProduct = async (
         const { productId } = req.params
         const { image } = req.body
 
-        // Переносим картинку из временной папки
         if (image) {
             movingFile(
                 image.fileName,
@@ -92,17 +97,25 @@ const updateProduct = async (
             )
         }
 
+        const allowedUpdates = {
+            title: sanitizeText(req.body.title),
+            description: sanitizeText(req.body.description),
+            category: sanitizeText(req.body.category),
+            price: req.body.price ? req.body.price : null,
+            image: req.body.image
+                ? {
+                      fileName: req.body.image.fileName,
+                      originalName: sanitizeText(req.body.image.originalName),
+                  }
+                : undefined,
+        }
+
         const product = await Product.findByIdAndUpdate(
             productId,
-            {
-                $set: {
-                    ...req.body,
-                    price: req.body.price ? req.body.price : null,
-                    image: req.body.image ? req.body.image : undefined,
-                },
-            },
+            { $set: allowedUpdates },
             { runValidators: true, new: true }
         ).orFail(() => new NotFoundError('Нет товара по заданному id'))
+
         return res.send(product)
     } catch (error) {
         if (error instanceof MongooseError.ValidationError) {

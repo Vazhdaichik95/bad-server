@@ -1,6 +1,7 @@
 import { unlink } from 'fs'
 import mongoose, { Document } from 'mongoose'
 import { join } from 'path'
+import sanitizeText from '../utils/sanitizeText'
 
 export interface IFile {
     fileName: string
@@ -23,6 +24,7 @@ const cardsSchema = new mongoose.Schema<IProduct>(
             required: [true, 'Поле "title" должно быть заполнено'],
             minlength: [2, 'Минимальная длина поля "title" - 2'],
             maxlength: [30, 'Максимальная длина поля "title" - 30'],
+            set: sanitizeText,
         },
         image: {
             fileName: {
@@ -30,13 +32,16 @@ const cardsSchema = new mongoose.Schema<IProduct>(
                 required: [true, 'Поле "image.fileName" должно быть заполнено'],
             },
             originalName: String,
+            set: sanitizeText,
         },
         category: {
             type: String,
             required: [true, 'Поле "category" должно быть заполнено'],
+            set: sanitizeText,
         },
         description: {
             type: String,
+            set: sanitizeText,
         },
         price: {
             type: Number,

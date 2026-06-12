@@ -4,6 +4,7 @@ import validator from 'validator'
 import { PaymentType, phoneRegExp } from '../middlewares/validations'
 import Counter from './counter'
 import User from './user'
+import sanitizeText from '../utils/sanitizeText'
 
 export enum StatusType {
     Cancelled = 'cancelled',
@@ -47,10 +48,11 @@ const orderSchema: Schema = new Schema(
             required: true,
         },
         customer: { type: Types.ObjectId, ref: 'user' },
-        deliveryAddress: { type: String },
+        deliveryAddress: { type: String, set: sanitizeText },
         email: {
             type: String,
             required: [true, 'Поле "email" должно быть заполнено'],
+            set: sanitizeText,
             validate: {
                 validator: (v: string) => validator.isEmail(v),
                 message: 'Поле "email" должно быть валидным email-адресом',
@@ -59,6 +61,7 @@ const orderSchema: Schema = new Schema(
         phone: {
             type: String,
             required: [true, 'Поле "phone" должно быть заполнено'],
+            set: sanitizeText,
             validate: {
                 validator: (v: string) => phoneRegExp.test(v),
                 message: 'Поле "phone" должно быть валидным телефоном.',
@@ -67,6 +70,7 @@ const orderSchema: Schema = new Schema(
         comment: {
             type: String,
             default: '',
+            set: sanitizeText,
         },
     },
     { versionKey: false, timestamps: true }

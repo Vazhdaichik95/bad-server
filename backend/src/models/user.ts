@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken'
 import mongoose, { Document, HydratedDocument, Model, Types } from 'mongoose'
 import validator from 'validator'
 import md5 from 'md5'
+import sanitizeText from '../utils/sanitizeText'
 
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '../config'
 import UnauthorizedError from '../errors/unauthorized-error'
@@ -48,6 +49,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             default: 'Евлампий',
             minlength: [2, 'Минимальная длина поля "name" - 2'],
             maxlength: [30, 'Максимальная длина поля "name" - 30'],
+            set: sanitizeText,
         },
         // в схеме пользователя есть обязательные email и password
         email: {
@@ -59,6 +61,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
                 validator: (v: string) => validator.isEmail(v),
                 message: 'Поле "email" должно быть валидным email-адресом',
             },
+            set: sanitizeText,
         },
         // поле password не имеет ограничения на длину, т.к. пароль хранится в виде хэша
         password: {
@@ -80,6 +83,7 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         },
         phone: {
             type: String,
+            set: sanitizeText,
         },
         lastOrderDate: {
             type: Date,
@@ -106,7 +110,13 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
         toJSON: {
             virtuals: true,
             transform: (_doc, ret) => {
-                const { tokens: _tokens, password: _password, _id, roles: _roles, ...rest } = ret
+                const {
+                    tokens: _tokens,
+                    password: _password,
+                    _id,
+                    roles: _roles,
+                    ...rest
+                } = ret
                 return rest
             },
         },
