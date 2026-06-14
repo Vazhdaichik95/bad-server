@@ -55,5 +55,13 @@
     "sharp": "^0.33.4",
     "unique-slug": "^4.0.0",
     "validator": "^13.12.0"
+  },
+  "overrides": {
+    "celebrate": {
+      "lodash": "4.17.21"
+    },
+    "minimatch": {
+      "brace-expansion": "1.1.13"
+    }
   }
 }
