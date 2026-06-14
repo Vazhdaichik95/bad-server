@@ -18,11 +18,13 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         const user = await User.findUserByCredentials(email, password)
         const accessToken = user.generateAccessToken()
         const refreshToken = await user.generateRefreshToken()
+
         res.cookie(
             REFRESH_TOKEN.cookie.name,
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+
         return res.json({
             success: true,
             user,
@@ -39,6 +41,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         const { email, password, name } = req.body
         const newUser = new User({ email, password, name })
         await newUser.save()
+
         const accessToken = newUser.generateAccessToken()
         const refreshToken = await newUser.generateRefreshToken()
 
@@ -47,6 +50,7 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+
         return res.status(constants.HTTP_STATUS_CREATED).json({
             success: true,
             user: newUser,
@@ -56,11 +60,13 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         if (error instanceof MongooseError.ValidationError) {
             return next(new BadRequestError(error.message))
         }
+
         if (error instanceof Error && error.message.includes('E11000')) {
             return next(
                 new ConflictError('Пользователь с таким email уже существует')
             )
         }
+
         return next(error)
     }
 }
@@ -79,13 +85,13 @@ const getCurrentUser = async (
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
+
         res.json({ user, success: true })
     } catch (error) {
         next(error)
     }
 }
 
-// Можно лучше: вынести общую логику получения данных из refresh токена
 const deleteRefreshTokenInUser = async (
     req: Request,
     _res: Response,
@@ -102,6 +108,7 @@ const deleteRefreshTokenInUser = async (
         rfTkn,
         REFRESH_TOKEN.secret
     ) as JwtPayload
+
     const user = await User.findOne({
         _id: decodedRefreshTkn._id,
     }).orFail(() => new UnauthorizedError('Пользователь не найден в базе'))
@@ -118,16 +125,25 @@ const deleteRefreshTokenInUser = async (
     return user
 }
 
-// Реализация удаления токена из базы может отличаться
-// GET  /auth/logout
+// POST /auth/logout
 const logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
         await deleteRefreshTokenInUser(req, res, next)
-        const expireCookieOptions = {
+
+        const expireRefreshCookieOptions = {
             ...REFRESH_TOKEN.cookie.options,
             maxAge: -1,
         }
-        res.cookie(REFRESH_TOKEN.cookie.name, '', expireCookieOptions)
+
+        res.cookie(REFRESH_TOKEN.cookie.name, '', expireRefreshCookieOptions)
+        res.cookie('XSRF-TOKEN', '', {
+            httpOnly: false,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            maxAge: -1,
+        })
+
         res.status(200).json({
             success: true,
         })
@@ -136,7 +152,7 @@ const logout = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-// GET  /auth/token
+// POST /auth/token
 const refreshAccessToken = async (
     req: Request,
     res: Response,
@@ -148,17 +164,36 @@ const refreshAccessToken = async (
             res,
             next
         )
+
         const accessToken = await userWithRefreshTkn.generateAccessToken()
         const refreshToken = await userWithRefreshTkn.generateRefreshToken()
+
         res.cookie(
             REFRESH_TOKEN.cookie.name,
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+
         return res.json({
             success: true,
             user: userWithRefreshTkn,
             accessToken,
+        })
+    } catch (error) {
+        return next(error)
+    }
+}
+
+// GET /auth/csrf-token
+const getCsrfToken = async (
+    _req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        return res.status(200).json({
+            success: true,
+            csrfToken: res.locals.csrfToken,
         })
     } catch (error) {
         return next(error)
@@ -171,6 +206,7 @@ const getCurrentUserRoles = async (
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
+
     try {
         await User.findById(userId, req.body, {
             new: true,
@@ -180,6 +216,7 @@ const getCurrentUserRoles = async (
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
+
         res.status(200).json(res.locals.user.roles)
     } catch (error) {
         next(error)
@@ -223,4 +260,5 @@ export {
     refreshAccessToken,
     register,
     updateCurrentUser,
+    getCsrfToken,
 }

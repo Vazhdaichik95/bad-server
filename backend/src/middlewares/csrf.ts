@@ -20,6 +20,8 @@ export const issueCsrfToken = (
     const csrfToken = crypto.randomBytes(32).toString('hex')
 
     res.cookie(CSRF_COOKIE_NAME, csrfToken, getCookieOptions())
+    res.locals.csrfToken = csrfToken
+
     next()
 }
 
@@ -44,7 +46,7 @@ export const verifyOrigin = (
     next: NextFunction
 ) => {
     const allowedOrigin = process.env.FRONTEND_URL
-    const {origin} = req.headers
+    const { origin } = req.headers
 
     if (allowedOrigin && origin && origin !== allowedOrigin) {
         return next(new UnauthorizedError('Invalid origin'))
