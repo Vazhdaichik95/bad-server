@@ -54,8 +54,7 @@ class Api {
     }
 
     protected getCsrfHeaders = (): Record<string, string> => {
-        const csrfToken = getCookie('XSRF-TOKEN')
-
+        const csrfToken = getCookie('_csrf')
         return csrfToken ? { 'X-CSRF-Token': csrfToken } : {}
     }
 

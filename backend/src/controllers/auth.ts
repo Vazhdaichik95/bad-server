@@ -10,6 +10,7 @@ import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 import sanitizeText from '../utils/sanitizeText'
+import { CSRF_COOKIE_NAME } from '../middlewares/csrf'
 
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
@@ -136,7 +137,7 @@ const logout = async (req: Request, res: Response, next: NextFunction) => {
         }
 
         res.cookie(REFRESH_TOKEN.cookie.name, '', expireRefreshCookieOptions)
-        res.cookie('XSRF-TOKEN', '', {
+        res.cookie(CSRF_COOKIE_NAME, '', {
             httpOnly: false,
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',

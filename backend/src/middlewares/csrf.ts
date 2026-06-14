@@ -2,8 +2,7 @@ import crypto from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import UnauthorizedError from '../errors/unauthorized-error'
 
-const CSRF_COOKIE_NAME = 'XSRF-TOKEN'
-const CSRF_HEADER_NAME = 'x-csrf-token'
+const CSRF_COOKIE_NAME = '_csrf'
 
 const getCookieOptions = () => ({
     httpOnly: false,
@@ -22,7 +21,7 @@ export const issueCsrfToken = (
     res.cookie(CSRF_COOKIE_NAME, csrfToken, getCookieOptions())
     res.locals.csrfToken = csrfToken
 
-    next()
+    return next()
 }
 
 export const verifyCsrfToken = (
@@ -31,7 +30,9 @@ export const verifyCsrfToken = (
     next: NextFunction
 ) => {
     const csrfCookie = req.cookies?.[CSRF_COOKIE_NAME]
-    const csrfHeader = req.headers[CSRF_HEADER_NAME] as string | undefined
+    const csrfHeader =
+        (req.headers['x-csrf-token'] as string | undefined) ||
+        (req.headers['x-xsrf-token'] as string | undefined)
 
     if (!csrfCookie || !csrfHeader || csrfCookie !== csrfHeader) {
         return next(new UnauthorizedError('CSRF token invalid or missing'))
@@ -55,4 +56,4 @@ export const verifyOrigin = (
     return next()
 }
 
-export { CSRF_COOKIE_NAME, CSRF_HEADER_NAME }
+export { CSRF_COOKIE_NAME }
