@@ -56,6 +56,8 @@ const userSchema = new mongoose.Schema<IUser, IUserModel, IUserMethods>(
             type: String,
             required: [true, 'Поле "email" должно быть заполнено'],
             unique: true, // поле email уникально (есть опция unique: true);
+            lowercase: true,
+            trim: true,
             validate: {
                 // для проверки email студенты используют validator
                 validator: (v: string) => validator.isEmail(v),
@@ -182,19 +184,32 @@ userSchema.methods.generateRefreshToken =
     }
 
 userSchema.statics.findUserByCredentials = async function findByCredentials(
-    email: string,
-    password: string
+  email: string,
+  password: string
 ) {
-    const user = await this.findOne({ email })
-        .select('+password')
-        .orFail(() => new UnauthorizedError('Неправильные почта или пароль'))
-    const passwdMatch = md5(password) === user.password
-    if (!passwdMatch) {
-        return Promise.reject(
-            new UnauthorizedError('Неправильные почта или пароль')
-        )
-    }
-    return user
+  if (typeof email !== 'string' || typeof password !== 'string') {
+    throw new UnauthorizedError('Неправильные почта или пароль')
+  }
+
+  const rawEmail = sanitizeText(email)
+  const safeEmail =
+    typeof rawEmail === 'string'
+      ? rawEmail.trim().toLowerCase()
+      : String(rawEmail).trim().toLowerCase()
+
+  const safePassword = String(password)
+
+  const user = await this.findOne({ email: safeEmail })
+    .select('+password')
+    .orFail(() => new UnauthorizedError('Неправильные почта или пароль'))
+
+  const passwdMatch = md5(safePassword) === user.password
+
+  if (!passwdMatch) {
+    throw new UnauthorizedError('Неправильные почта или пароль')
+  }
+
+  return user
 }
 
 userSchema.methods.calculateOrderStats = async function calculateOrderStats() {

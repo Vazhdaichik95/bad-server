@@ -30,14 +30,10 @@ export const getOrders = async (
         } = req.query
 
         const filters: FilterQuery<Partial<IOrder>> = {}
+        const allowedStatuses = ['created', 'pending', 'paid', 'processing', 'done', 'cancelled']
 
-        if (status) {
-            if (typeof status === 'object') {
-                Object.assign(filters, status)
-            }
-            if (typeof status === 'string') {
-                filters.status = status
-            }
+        if (typeof status === 'string' && allowedStatuses.includes(status)) {
+            filters.status = status
         }
 
         if (totalAmountFrom) {
@@ -57,16 +53,19 @@ export const getOrders = async (
         if (orderDateFrom) {
             filters.createdAt = {
                 ...filters.createdAt,
-                $gte: new Date(orderDateFrom as string),
+                $gte: new Date(String(orderDateFrom)),
             }
         }
 
         if (orderDateTo) {
             filters.createdAt = {
                 ...filters.createdAt,
-                $lte: new Date(orderDateTo as string),
+                $lte: new Date(String(orderDateTo)),
             }
         }
+
+        const escapeRegExp = (value: string) =>
+            value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
         const aggregatePipeline: any[] = [
             { $match: filters },
@@ -90,8 +89,9 @@ export const getOrders = async (
             { $unwind: '$products' },
         ]
 
-        if (search) {
-            const searchRegex = new RegExp(search as string, 'i')
+        if (typeof search === 'string' && search.trim()) {
+            const safeSearch = escapeRegExp(search.trim())
+            const searchRegex = new RegExp(safeSearch, 'i')
             const searchNumber = Number(search)
 
             const searchConditions: any[] = [{ 'products.title': searchRegex }]
@@ -105,14 +105,18 @@ export const getOrders = async (
                     $or: searchConditions,
                 },
             })
-
-            filters.$or = searchConditions
         }
 
-        const sort: { [key: string]: any } = {}
+        const allowedSortFields = ['createdAt', 'totalAmount', 'status', 'orderNumber']
+        const sort: Record<string, 1 | -1> = {}
 
-        if (sortField && sortOrder) {
-            sort[sortField as string] = sortOrder === 'desc' ? -1 : 1
+        if (
+            typeof sortField === 'string' &&
+            allowedSortFields.includes(sortField)
+        ) {
+            sort[sortField] = sortOrder === 'desc' ? -1 : 1
+        } else {
+            sort.createdAt = -1
         }
 
         aggregatePipeline.push(

@@ -16,6 +16,11 @@ import { CSRF_COOKIE_NAME } from '../middlewares/csrf'
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password } = req.body
+
+        if (typeof email !== 'string' || typeof password !== 'string') {
+            return next(new UnauthorizedError('Неправильные почта или пароль'))
+        }
+
         const user = await User.findUserByCredentials(email, password)
         const accessToken = user.generateAccessToken()
         const refreshToken = await user.generateRefreshToken()
@@ -40,7 +45,20 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password, name } = req.body
-        const newUser = new User({ email, password, name })
+        
+        if (
+            typeof email !== 'string' ||
+            typeof password !== 'string' ||
+            (name !== undefined && typeof name !== 'string')
+        ) {
+            return next(new BadRequestError('Переданы некорректные данные'))
+        }
+
+        const newUser = new User({
+            email: sanitizeText(email).trim().toLowerCase(),
+            password,
+            name: typeof name === 'string' ? sanitizeText(name) : undefined,
+        })
         await newUser.save()
 
         const accessToken = newUser.generateAccessToken()
@@ -202,23 +220,21 @@ const getCsrfToken = async (
 }
 
 const getCurrentUserRoles = async (
-    req: Request,
+    _req: Request,
     res: Response,
     next: NextFunction
 ) => {
     const userId = res.locals.user._id
 
     try {
-        await User.findById(userId, req.body, {
-            new: true,
-        }).orFail(
+        const user = await User.findById(userId).orFail(
             () =>
                 new NotFoundError(
                     'Пользователь по заданному id отсутствует в базе'
                 )
         )
 
-        res.status(200).json(res.locals.user.roles)
+        res.status(200).json(user.roles)
     } catch (error) {
         next(error)
     }

@@ -1,6 +1,6 @@
-const sanitizeText = (value?: unknown): unknown => {
+const sanitizeText = (value?: unknown): string => {
     if (typeof value !== 'string') {
-        return value
+        return ''
     }
 
     return value
