@@ -3,22 +3,39 @@ import fs from 'fs'
 import path from 'path'
 
 export default function serveStatic(baseDir: string) {
-    return (req: Request, res: Response, next: NextFunction) => {
-        // Определяем полный путь к запрашиваемому файлу
-        const filePath = path.join(baseDir, req.path)
+    const absoluteBaseDir = path.resolve(baseDir)
 
-        // Проверяем, существует ли файл
-        fs.access(filePath, fs.constants.F_OK, (err) => {
-            if (err) {
-                // Файл не существует отдаем дальше мидлварам
-                return next()
+    return (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const requestPath = decodeURIComponent(req.path)
+            const safeRelativePath = requestPath.replace(/^(\.\.(\/|\\|$))+/, '')
+            const filePath = path.resolve(
+                absoluteBaseDir,
+                `.${safeRelativePath}`
+            )
+
+            const relative = path.relative(absoluteBaseDir, filePath)
+
+            if (relative.startsWith('..') || path.isAbsolute(relative)) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Доступ запрещён',
+                })
             }
-            // Файл существует, отправляем его клиенту
-            return res.sendFile(filePath, (err) => {
+
+            fs.access(filePath, fs.constants.F_OK, (err) => {
                 if (err) {
-                    next(err)
+                    return next()
                 }
+
+                return res.sendFile(filePath, (sendErr) => {
+                    if (sendErr) {
+                        next(sendErr)
+                    }
+                })
             })
-        })
+        } catch (error) {
+            return next(error)
+        }
     }
 }
