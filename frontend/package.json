@@ -24,8 +24,7 @@
     "react-router-dom": "^6.23.1",
     "react-simple-wysiwyg": "^3.0.3",
     "react-toastify": "^10.0.5",
-    "redux-persist": "^6.0.0",
-    "vite-plugin-svgr": "^5.2.0"
+    "redux-persist": "^6.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
@@ -42,8 +41,9 @@
     "eslint-plugin-react-refresh": "^0.4.6",
     "prettier": "^3.3.3",
     "sass": "^1.77.2",
-    "typescript": "^5.2.2",
+    "typescript": "^6.0.3",
     "vite": "^8.0.16",
+    "vite-plugin-svgr": "^5.2.0",
     "vite-tsconfig-paths": "^4.3.2"
   }
 }
