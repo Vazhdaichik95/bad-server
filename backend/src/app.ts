@@ -20,11 +20,13 @@ const limiter = rateLimit({
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { message: 'Слишком много запросов, попробуйте позже' },
+    message: {
+        success: false,
+        message: 'Слишком много запросов, попробуйте позже',
+    },
 })
 
 app.use(helmet())
-
 app.use(cookieParser())
 
 app.use(
@@ -53,7 +55,6 @@ app.use(routes)
 app.use(errors())
 app.use(errorHandler)
 
-// eslint-disable-next-line no-console
 const bootstrap = async () => {
     try {
         await mongoose.connect(DB_ADDRESS)

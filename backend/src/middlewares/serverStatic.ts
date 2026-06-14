@@ -8,12 +8,7 @@ export default function serveStatic(baseDir: string) {
     return (req: Request, res: Response, next: NextFunction) => {
         try {
             const requestPath = decodeURIComponent(req.path)
-            const safeRelativePath = requestPath.replace(/^(\.\.(\/|\\|$))+/, '')
-            const filePath = path.resolve(
-                absoluteBaseDir,
-                `.${safeRelativePath}`
-            )
-
+            const filePath = path.resolve(absoluteBaseDir, `.${requestPath}`)
             const relative = path.relative(absoluteBaseDir, filePath)
 
             if (relative.startsWith('..') || path.isAbsolute(relative)) {
@@ -29,9 +24,7 @@ export default function serveStatic(baseDir: string) {
                 }
 
                 return res.sendFile(filePath, (sendErr) => {
-                    if (sendErr) {
-                        next(sendErr)
-                    }
+                    if (sendErr) next(sendErr)
                 })
             })
         } catch (error) {

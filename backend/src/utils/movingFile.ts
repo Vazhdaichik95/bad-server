@@ -3,16 +3,17 @@ import path from 'path'
 
 const SAFE_FILE_NAME = /^[a-zA-Z0-9._-]{1,255}$/
 
-function resolveInsideDir(baseDir: string, fileName: string) {
+const resolveInsideDir = (baseDir: string, fileName: string): string => {
     const absoluteBaseDir = path.resolve(baseDir)
-    const absoluteTargetPath = path.resolve(absoluteBaseDir, fileName)
-    const relative = path.relative(absoluteBaseDir, absoluteTargetPath)
+    const safeFileName = path.basename(fileName)
+    const absoluteTarget = path.resolve(absoluteBaseDir, safeFileName)
+    const relative = path.relative(absoluteBaseDir, absoluteTarget)
 
     if (relative.startsWith('..') || path.isAbsolute(relative)) {
         throw new Error('Некорректный путь к файлу')
     }
 
-    return absoluteTargetPath
+    return absoluteTarget
 }
 
 function movingFile(imagePath: string, from: string, to: string) {

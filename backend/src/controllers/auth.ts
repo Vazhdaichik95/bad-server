@@ -18,7 +18,7 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
         const { email, password } = req.body
 
         if (typeof email !== 'string' || typeof password !== 'string') {
-            return next(new UnauthorizedError('Неправильные почта или пароль'))
+        return next(new UnauthorizedError('Неправильные почта или пароль'))
         }
 
         const user = await User.findUserByCredentials(email, password)
@@ -45,19 +45,19 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
 const register = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { email, password, name } = req.body
-        
+
         if (
-            typeof email !== 'string' ||
-            typeof password !== 'string' ||
-            (name !== undefined && typeof name !== 'string')
+        typeof email !== 'string' ||
+        typeof password !== 'string' ||
+        (name !== undefined && typeof name !== 'string')
         ) {
-            return next(new BadRequestError('Переданы некорректные данные'))
+        return next(new BadRequestError('Переданы некорректные данные'))
         }
 
         const newUser = new User({
-            email: sanitizeText(email).trim().toLowerCase(),
-            password,
-            name: typeof name === 'string' ? sanitizeText(name) : undefined,
+        email: sanitizeText(email).toLowerCase(),
+        password,
+        name: sanitizeText(name),
         })
         await newUser.save()
 
@@ -228,10 +228,7 @@ const getCurrentUserRoles = async (
 
     try {
         const user = await User.findById(userId).orFail(
-            () =>
-                new NotFoundError(
-                    'Пользователь по заданному id отсутствует в базе'
-                )
+        () => new NotFoundError('Пользователь по заданному id отсутствует в базе')
         )
 
         res.status(200).json(user.roles)
