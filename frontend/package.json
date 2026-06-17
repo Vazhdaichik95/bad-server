@@ -45,5 +45,11 @@
     "vite": "^8.0.16",
     "vite-plugin-svgr": "^5.2.0",
     "vite-tsconfig-paths": "^4.3.2"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0",
+    "vite": {
+      "esbuild": "^0.25.0"
+    }
   }
 }

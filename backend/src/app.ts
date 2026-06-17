@@ -15,6 +15,14 @@ import routes from './routes'
 const { PORT = 3000, FRONTEND_URL = 'http://localhost:8080' } = process.env
 const app = express()
 
+const corsOptions = {
+    origin: FRONTEND_URL,
+    credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    optionsSuccessStatus: 204,
+}
+
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -28,28 +36,15 @@ const limiter = rateLimit({
 
 app.use(helmet())
 app.use(cookieParser())
-
-app.use(
-    cors({
-        origin: FRONTEND_URL,
-        credentials: true,
-    })
-)
+app.use(cors(corsOptions))
+app.options('*', cors(corsOptions))
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
-app.use(urlencoded({ extended: true, limit: '10kb' }))
-app.use(json({ limit: '10kb' }))
+app.use(urlencoded({ extended: true, limit: '100kb' }))
+app.use(json({ limit: '100kb' }))
 
 app.use(limiter)
-
-app.options(
-    '*',
-    cors({
-        origin: FRONTEND_URL,
-        credentials: true,
-    })
-)
 
 app.use(routes)
 app.use(errors())
