@@ -449,11 +449,17 @@ export const createOrder = async (
             return next(new BadRequestError('Неверная сумма заказа'))
         }
 
+        const normalizedPhone = sanitizePhone(phone)
+
+        if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
+            return next(new BadRequestError('Некорректный телефон'))
+        }
+
         const newOrder = new Order({
             totalAmount: total,
             products: items,
             payment,
-            phone: sanitizePhone(phone),
+            phone: normalizedPhone,
             email: sanitizeText(email).toLowerCase(),
             comment: sanitizeText(comment),
             customer: userId,

@@ -12,8 +12,9 @@ import errorHandler from './middlewares/error-handler'
 import serveStatic from './middlewares/serverStatic'
 import routes from './routes'
 
-const { PORT = 3000, FRONTEND_URL = 'http://localhost:8080' } = process.env
 const app = express()
+
+const { PORT = 3000, FRONTEND_URL = 'http://localhost:5173' } = process.env
 
 const corsOptions = {
     origin: FRONTEND_URL,
@@ -25,7 +26,7 @@ const corsOptions = {
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 100,
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
     message: {
