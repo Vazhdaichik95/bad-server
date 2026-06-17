@@ -40,6 +40,7 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
             return next(new ForbiddenError('Нет доступа'))
         }
 
+        ;(req as Request & { user?: typeof user }).user = user
         res.locals.user = user
         return next()
     } catch (error) {
@@ -52,13 +53,16 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
 }
 
 export function roleGuardMiddleware(...roles: Role[]) {
-    return (_req: Request, res: Response, next: NextFunction) => {
-        if (!res.locals.user) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const currentUser =
+            (req as Request & { user?: any }).user || res.locals.user
+
+        if (!currentUser) {
             return next(new UnauthorizedError('Необходима авторизация'))
         }
 
-        const userRoles = Array.isArray(res.locals.user.roles)
-            ? res.locals.user.roles
+        const userRoles = Array.isArray(currentUser.roles)
+            ? currentUser.roles
             : []
 
         const hasAccess = roles.some((role) => userRoles.includes(role))
@@ -80,11 +84,14 @@ export function currentUserAccessMiddleware<T extends Record<string, any>>(
         try {
             const id = req.params[idProperty]
 
-            if (!res.locals.user) {
+            const currentUser =
+                (req as Request & { user?: any }).user || res.locals.user
+
+            if (!currentUser) {
                 return next(new UnauthorizedError('Необходима авторизация'))
             }
 
-            if (res.locals.user.roles.includes(Role.Admin)) {
+            if (currentUser.roles.includes(Role.Admin)) {
                 return next()
             }
 
@@ -99,7 +106,7 @@ export function currentUserAccessMiddleware<T extends Record<string, any>>(
             }
 
             const userEntityId = entity[userProperty] as Types.ObjectId
-            const hasAccess = new Types.ObjectId(res.locals.user._id).equals(
+            const hasAccess = new Types.ObjectId(currentUser._id).equals(
                 userEntityId
             )
 

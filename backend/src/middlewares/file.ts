@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
 import { mkdirSync } from 'fs'
-import { join, extname } from 'path'
+import { join } from 'path'
 import BadRequestError from '../errors/bad-request-error'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
@@ -39,11 +39,7 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        const safeExtension =
-            mimeToExtensionMap[file.mimetype] ||
-            extname(file.originalname).toLowerCase() ||
-            '.bin'
-
+        const safeExtension = mimeToExtensionMap[file.mimetype] || '.bin'
         const safeName = `${crypto.randomUUID()}${safeExtension}`
         cb(null, safeName)
     },
