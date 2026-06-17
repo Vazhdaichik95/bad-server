@@ -6,6 +6,7 @@ import Order, { IOrder } from '../models/order'
 import Product, { IProduct } from '../models/product'
 import User from '../models/user'
 import sanitizeText from '../utils/sanitizeText'
+import sanitizePhone from '../utils/sanitizePhone'
 
 const escapeRegExp = (value: string): string =>
     value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -32,17 +33,6 @@ const normalizeLimit = (
     }
 
     return Math.min(Math.trunc(parsed), max)
-}
-
-const sanitizePhone = (value: unknown): string => {
-    if (typeof value !== 'string') {
-        return ''
-    }
-
-    return value
-        .replace(/[^\d+()\- ]/g, '')
-        .trim()
-        .slice(0, 20)
 }
 
 // eslint-disable-next-line max-len
