@@ -1,12 +1,13 @@
 const sanitizePhone = (value: unknown): string => {
-  if (typeof value !== 'string') {
-    return ''
-  }
+    if (typeof value !== 'string') {
+        return ''
+    }
 
-  return value
-    .replace(/[^\d+()\- ]/g, '')
-    .trim()
-    .slice(0, 20)
+    const trimmed = value.trim()
+    const hasPlus = trimmed.startsWith('+')
+    const digits = trimmed.replace(/\D/g, '').slice(0, 15)
+
+    return hasPlus ? `+${digits}` : digits
 }
 
 export default sanitizePhone

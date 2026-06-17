@@ -22,7 +22,6 @@ export const uploadFile = async (
 
         return res.status(constants.HTTP_STATUS_CREATED).send({
             fileName,
-            originalName: req.file.originalname,
             mimeType: req.file.mimetype,
             size: req.file.size,
         })
