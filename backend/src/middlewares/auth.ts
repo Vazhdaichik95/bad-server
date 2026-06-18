@@ -25,7 +25,7 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
         const payload = jwt.verify(
             accessToken,
             ACCESS_TOKEN.secret
-        ) as JwtPayload
+        ) as JwtPayload & { roles?: Role[] }
 
         if (!payload?.sub || !Types.ObjectId.isValid(payload.sub)) {
             return next(new UnauthorizedError('Невалидный токен'))
@@ -40,8 +40,13 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
             return next(new ForbiddenError('Нет доступа'))
         }
 
-        ;(req as Request & { user?: typeof user }).user = user
-        res.locals.user = user
+        const authUser = {
+            ...user.toObject(),
+            roles: Array.isArray(payload.roles) ? payload.roles : user.roles,
+        }
+
+        ;(req as Request & { user?: typeof authUser }).user = authUser
+        res.locals.user = authUser
         return next()
     } catch (error) {
         if (error instanceof Error && error.name === 'TokenExpiredError') {

@@ -143,6 +143,7 @@ userSchema.methods.generateAccessToken = function generateAccessToken() {
         {
             _id: user._id.toString(),
             email: user.email,
+            roles: user.roles,
         },
         ACCESS_TOKEN.secret,
         {
