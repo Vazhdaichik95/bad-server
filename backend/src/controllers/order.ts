@@ -415,11 +415,8 @@ export const createOrder = async (
     next: NextFunction
 ) => {
     try {
-        const basket: IProduct[] = []
-        const products = await Product.find<IProduct>({})
         const userId = res.locals.user._id
-        const { address, payment, phone, total, email, items, comment } =
-            req.body
+        const { address, payment, phone, total, email, items, comment } = req.body
 
         if (!Array.isArray(items)) {
             return next(new BadRequestError('Некорректный список товаров'))
@@ -428,6 +425,18 @@ export const createOrder = async (
         if (typeof total !== 'number') {
             return next(new BadRequestError('Некорректная сумма заказа'))
         }
+
+        const normalizedPhone = sanitizePhone(phone)
+
+        if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
+            return next(new BadRequestError('Некорректный телефон'))
+        }
+
+        const products = await Product.find<IProduct>({
+            _id: { $in: items },
+        })
+
+        const basket: IProduct[] = []
 
         items.forEach((id: Types.ObjectId) => {
             const product = products.find((p) => p._id.equals(id))
@@ -447,12 +456,6 @@ export const createOrder = async (
 
         if (totalBasket !== total) {
             return next(new BadRequestError('Неверная сумма заказа'))
-        }
-
-        const normalizedPhone = sanitizePhone(phone)
-
-        if (normalizedPhone.length < 10 || normalizedPhone.length > 15) {
-            return next(new BadRequestError('Некорректный телефон'))
         }
 
         const newOrder = new Order({

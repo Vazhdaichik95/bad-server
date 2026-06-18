@@ -220,26 +220,12 @@ export const getCustomers = async (
             limit: normalizedLimit,
         }
 
-        const users = await User.find(filters, null, options).populate([
-            'orders',
-            {
-                path: 'lastOrder',
-                populate: {
-                    path: 'products',
-                },
-            },
-            {
-                path: 'lastOrder',
-                populate: {
-                    path: 'customer',
-                },
-            },
-        ])
+        const users = await User.find(filters, null, options).lean()
 
         const totalUsers = await User.countDocuments(filters)
         const totalPages = Math.ceil(totalUsers / normalizedLimit)
 
-        res.status(200).json({
+        return res.status(200).json({
             customers: users,
             pagination: {
                 totalUsers,
