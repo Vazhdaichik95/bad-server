@@ -38,7 +38,6 @@ const limiter = rateLimit({
 app.use(helmet())
 app.use(cookieParser())
 app.use(cors(corsOptions))
-app.options('*', cors(corsOptions))
 
 app.use(serveStatic(path.join(__dirname, 'public')))
 
