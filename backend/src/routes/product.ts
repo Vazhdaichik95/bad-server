@@ -16,6 +16,7 @@ import { Role } from '../models/user'
 const productRouter = Router()
 
 productRouter.get('/', getProducts)
+
 productRouter.post(
     '/',
     auth,
@@ -23,6 +24,7 @@ productRouter.post(
     validateProductBody,
     createProduct
 )
+
 productRouter.delete(
     '/:productId',
     auth,
@@ -30,6 +32,7 @@ productRouter.delete(
     validateObjId,
     deleteProduct
 )
+
 productRouter.patch(
     '/:productId',
     auth,

@@ -7,25 +7,31 @@ import ConflictError from '../errors/conflict-error'
 import NotFoundError from '../errors/not-found-error'
 import Product from '../models/product'
 import movingFile from '../utils/movingFile'
+import { normalizeLimit, normalizePage } from '../utils/pagination'
+import sanitizeText from '../utils/sanitizeText'
 
-// GET /product
 const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { page = 1, limit = 5 } = req.query
+        const normalizedPage = normalizePage(page)
+        const normalizedLimit = normalizeLimit(limit, 5, 10)
+
         const options = {
-            skip: (Number(page) - 1) * Number(limit),
-            limit: Number(limit),
+            skip: (normalizedPage - 1) * normalizedLimit,
+            limit: normalizedLimit,
         }
+
         const products = await Product.find({}, null, options)
         const totalProducts = await Product.countDocuments({})
-        const totalPages = Math.ceil(totalProducts / Number(limit))
+        const totalPages = Math.ceil(totalProducts / normalizedLimit)
+
         return res.send({
             items: products,
             pagination: {
                 totalProducts,
                 totalPages,
-                currentPage: Number(page),
-                pageSize: Number(limit),
+                currentPage: normalizedPage,
+                pageSize: normalizedLimit,
             },
         })
     } catch (err) {
@@ -33,17 +39,15 @@ const getProducts = async (req: Request, res: Response, next: NextFunction) => {
     }
 }
 
-// POST /product
 const createProduct = async (
     req: Request,
     res: Response,
     next: NextFunction
 ) => {
     try {
-        const { description, category, price, title, image } = req.body
+        const {image} = req.body
 
-        // Переносим картинку из временной папки
-        if (image) {
+        if (image?.fileName && typeof image.fileName === 'string') {
             movingFile(
                 image.fileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
@@ -52,28 +56,34 @@ const createProduct = async (
         }
 
         const product = await Product.create({
-            description,
-            image,
-            category,
-            price,
-            title,
+            title: sanitizeText(req.body.title),
+            description: sanitizeText(req.body.description),
+            category: sanitizeText(req.body.category),
+            price: typeof req.body.price === 'number' ? req.body.price : null,
+            image: image?.fileName
+                ? {
+                      fileName: sanitizeText(image.fileName),
+                      originalName: sanitizeText(image.originalName),
+                  }
+                : undefined,
         })
+
         return res.status(constants.HTTP_STATUS_CREATED).send(product)
     } catch (error) {
         if (error instanceof MongooseError.ValidationError) {
             return next(new BadRequestError(error.message))
         }
+
         if (error instanceof Error && error.message.includes('E11000')) {
             return next(
                 new ConflictError('Товар с таким заголовком уже существует')
             )
         }
+
         return next(error)
     }
 }
 
-// TODO: Добавить guard admin
-// PUT /product
 const updateProduct = async (
     req: Request,
     res: Response,
@@ -81,10 +91,9 @@ const updateProduct = async (
 ) => {
     try {
         const { productId } = req.params
-        const { image } = req.body
+        const {image} = req.body
 
-        // Переносим картинку из временной папки
-        if (image) {
+        if (image?.fileName && typeof image.fileName === 'string') {
             movingFile(
                 image.fileName,
                 join(__dirname, `../public/${process.env.UPLOAD_PATH_TEMP}`),
@@ -92,36 +101,45 @@ const updateProduct = async (
             )
         }
 
+        const allowedUpdates = {
+            title: sanitizeText(req.body.title),
+            description: sanitizeText(req.body.description),
+            category: sanitizeText(req.body.category),
+            price: typeof req.body.price === 'number' ? req.body.price : null,
+            image: image?.fileName
+                ? {
+                      fileName: sanitizeText(image.fileName),
+                      originalName: sanitizeText(image.originalName),
+                  }
+                : undefined,
+        }
+
         const product = await Product.findByIdAndUpdate(
             productId,
-            {
-                $set: {
-                    ...req.body,
-                    price: req.body.price ? req.body.price : null,
-                    image: req.body.image ? req.body.image : undefined,
-                },
-            },
+            { $set: allowedUpdates },
             { runValidators: true, new: true }
         ).orFail(() => new NotFoundError('Нет товара по заданному id'))
+
         return res.send(product)
     } catch (error) {
         if (error instanceof MongooseError.ValidationError) {
             return next(new BadRequestError(error.message))
         }
+
         if (error instanceof MongooseError.CastError) {
             return next(new BadRequestError('Передан не валидный ID товара'))
         }
+
         if (error instanceof Error && error.message.includes('E11000')) {
             return next(
                 new ConflictError('Товар с таким заголовком уже существует')
             )
         }
+
         return next(error)
     }
 }
 
-// TODO: Добавить guard admin
-// DELETE /product
 const deleteProduct = async (
     req: Request,
     res: Response,
@@ -129,14 +147,17 @@ const deleteProduct = async (
 ) => {
     try {
         const { productId } = req.params
+
         const product = await Product.findByIdAndDelete(productId).orFail(
             () => new NotFoundError('Нет товара по заданному id')
         )
+
         return res.send(product)
     } catch (error) {
         if (error instanceof MongooseError.CastError) {
             return next(new BadRequestError('Передан не валидный ID товара'))
         }
+
         return next(error)
     }
 }
