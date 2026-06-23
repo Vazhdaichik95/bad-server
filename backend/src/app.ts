@@ -17,7 +17,9 @@ const app = express()
 const { PORT = 3000, FRONTEND_URL = 'http://localhost:5173' } = process.env
 
 const corsOptions = {
-    origin: FRONTEND_URL,
+    origin: (_origin: string | undefined, callback: (err: Error | null, allow?: string) => void) => {
+        callback(null, FRONTEND_URL);
+    },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
